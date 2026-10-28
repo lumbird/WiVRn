@@ -43,6 +43,9 @@ class bitrate_controller
 	uint32_t max_bitrate = 0; // requested by the headset, 0 until known
 	uint32_t bitrate = 0;
 
+	// The headset reports a frame several times (received, decoded, displayed): count it once.
+	uint64_t last_frame = 0;
+
 	// statistics for the current window
 	int frames = 0;
 	int lost = 0;
@@ -54,6 +57,11 @@ class bitrate_controller
 	int windows_since_base_reset = 0;
 
 	int good_windows = 0;
+
+	// After congestion, stay below the bitrate that caused it for a while instead of probing
+	// straight back into it.
+	uint32_t ceiling = 0;
+	int ceiling_windows = 0;
 
 	std::optional<uint32_t> end_window(int64_t frame_duration_ns);
 
