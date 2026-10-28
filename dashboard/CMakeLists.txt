@@ -22,6 +22,7 @@ add_executable(wivrn-dashboard
     dashboard_utils.cpp
     escape_string.cpp
     settings.cpp
+    picture_settings.cpp
     steam.cpp
     adb.cpp
     apk_installer.cpp

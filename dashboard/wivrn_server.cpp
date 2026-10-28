@@ -498,6 +498,12 @@ void wivrn_server::rename_key(QString public_key, QString name)
 		server_interface->RenameKey(public_key, name);
 }
 
+void wivrn_server::set_picture(bool enabled, QList<double> values)
+{
+	if (server_interface)
+		server_interface->SetPicture(enabled, values);
+}
+
 QString wivrn_server::enable_pairing(int timeout_secs)
 {
 	qDebug() << "Enabling pairing for" << timeout_secs << "seconds";

@@ -189,6 +189,7 @@ public:
 	Q_PROPERTY(bool encryptionEnabled READ isEncryptionEnabled NOTIFY encryptionEnabledChanged)
 	Q_INVOKABLE void revoke_key(QString public_key);
 	Q_INVOKABLE void rename_key(QString public_key, QString name);
+	Q_INVOKABLE void set_picture(bool enabled, QList<double> values);
 	Q_INVOKABLE QString enable_pairing(int timeout_secs = 120);
 	Q_INVOKABLE void disable_pairing();
 

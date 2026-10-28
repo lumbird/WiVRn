@@ -17,6 +17,64 @@ Kirigami.ScrollablePage {
 
     property bool allowUpdates: false // ignore onXXX events until document is loaded
 
+    // Picture adjustments go straight to the running server; no Apply needed.
+    function sendPicture() {
+        WivrnServer.set_picture(PictureSettings.enabled, PictureSettings.values());
+    }
+    Connections {
+        target: PictureSettings
+        function onChanged() {
+            settings.sendPicture();
+        }
+    }
+    Connections {
+        target: WivrnServer
+        // The compositor only exists while a headset is connected, so resend when that changes.
+        function onServerStatusChanged() {
+            settings.sendPicture();
+        }
+        function onHeadsetConnectedChanged() {
+            settings.sendPicture();
+        }
+        function onSessionRunningChanged() {
+            settings.sendPicture();
+        }
+    }
+
+    // One row of the Picture section.
+    component PictureSlider: RowLayout {
+        id: row
+        property alias from: slider.from
+        property alias to: slider.to
+        property alias stepSize: slider.stepSize
+        property real value
+        property real neutral
+        property string help
+        signal moved(real value)
+        enabled: PictureSettings.enabled
+        Controls.Slider {
+            id: slider
+            Layout.fillWidth: true
+            value: row.value
+            onMoved: row.moved(value)
+        }
+        Controls.Label {
+            text: slider.value.toFixed(2)
+            Layout.preferredWidth: 35
+            Layout.alignment: Qt.AlignRight
+        }
+        Controls.ToolButton {
+            icon.name: "edit-undo"
+            enabled: Math.abs(slider.value - row.neutral) > 0.001
+            onClicked: row.moved(row.neutral)
+            Controls.ToolTip.text: i18n("Back to normal")
+            Controls.ToolTip.visible: hovered
+        }
+        Kirigami.ContextualHelpButton {
+            toolTipText: row.help
+        }
+    }
+
     ColumnLayout {
         id: column
         anchors.fill: parent
@@ -78,6 +136,80 @@ Kirigami.ScrollablePage {
                 Kirigami.ContextualHelpButton {
                     toolTipText: i18n("\"Auto\" will use hardware acceleration if it is available")
                 }
+            }
+
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: i18n("Picture")
+            }
+
+            Controls.Switch {
+                Kirigami.FormData.label: i18n("Picture adjustments:")
+                text: PictureSettings.enabled ? i18n("On, changes apply live") : i18n("Off (no performance cost)")
+                checked: PictureSettings.enabled
+                onToggled: PictureSettings.enabled = checked
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Brightness")
+                from: 0.5; to: 2.0; stepSize: 0.05; neutral: 1.0
+                value: PictureSettings.brightness
+                onMoved: v => PictureSettings.brightness = v
+                help: i18n("Makes the whole picture brighter or darker. Too high turns bright areas pure white.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Gamma")
+                from: 0.5; to: 2.0; stepSize: 0.05; neutral: 1.0
+                value: PictureSettings.gamma
+                onMoved: v => PictureSettings.gamma = v
+                help: i18n("Above 1 lifts dark and mid tones without blowing out whites.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Contrast")
+                from: 0.5; to: 1.5; stepSize: 0.05; neutral: 1.0
+                value: PictureSettings.contrast
+                onMoved: v => PictureSettings.contrast = v
+                help: i18n("More or less difference between light and dark.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Saturation")
+                from: 0.0; to: 2.0; stepSize: 0.05; neutral: 1.0
+                value: PictureSettings.saturation
+                onMoved: v => PictureSettings.saturation = v
+                help: i18n("Overall colour strength. 0 is black and white.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Vibrance")
+                from: -1.0; to: 1.0; stepSize: 0.05; neutral: 0.0
+                value: PictureSettings.vibrance
+                onMoved: v => PictureSettings.vibrance = v
+                help: i18n("Boosts dull colours more than already strong ones.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Black level")
+                from: 0.0; to: 0.2; stepSize: 0.01; neutral: 0.0
+                value: PictureSettings.blackLevel
+                onMoved: v => PictureSettings.blackLevel = v
+                help: i18n("Lifts the darkest shades so you can see into shadows.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("White level")
+                from: 0.7; to: 1.0; stepSize: 0.01; neutral: 1.0
+                value: PictureSettings.whiteLevel
+                onMoved: v => PictureSettings.whiteLevel = v
+                help: i18n("Lowers the brightest white if it is too harsh.")
+            }
+            PictureSlider {
+                Kirigami.FormData.label: i18n("Colour temperature")
+                from: -1.0; to: 1.0; stepSize: 0.05; neutral: 0.0
+                value: PictureSettings.temperature
+                onMoved: v => PictureSettings.temperature = v
+                help: i18n("Below 0 is cooler (bluer), above 0 is warmer (yellower).")
+            }
+            Controls.Button {
+                text: i18n("Reset picture")
+                icon.name: "edit-reset"
+                enabled: PictureSettings.enabled
+                onClicked: PictureSettings.reset()
             }
 
             Kirigami.Separator {
