@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "bitrate_controller.h"
 #include "util/comp_base.h"
 #include "util/u_logging.h"
 
@@ -35,6 +36,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <thread>
 
 namespace wivrn
@@ -98,6 +100,7 @@ private:
 	wivrn::foveation foveation;
 
 	std::array<std::unique_ptr<video_encoder>, 3> encoders;
+	std::optional<bitrate_controller> adaptive_bitrate;
 
 #ifdef __cpp_lib_atomic_lock_free_type_aliases
 	using status_type = std::atomic_signed_lock_free;

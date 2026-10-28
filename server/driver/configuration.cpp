@@ -212,6 +212,12 @@ configuration::configuration()
 		if (auto it = json.find("tcp-only"); it != json.end())
 			tcp_only = *it;
 
+		if (auto it = json.find("adaptive-bitrate"); it != json.end())
+			adaptive_bitrate = *it;
+
+		if (auto it = json.find("adaptive-bitrate-min"); it != json.end())
+			adaptive_bitrate_min = *it;
+
 		if (auto it = json.find("port"); it != json.end())
 			port = *it;
 
