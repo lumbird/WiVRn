@@ -58,6 +58,11 @@ class bitrate_controller
 
 	int good_windows = 0;
 
+	// After congestion, stay below the bitrate that caused it for a while instead of probing
+	// straight back into it.
+	uint32_t ceiling = 0;
+	int ceiling_windows = 0;
+
 	std::optional<uint32_t> end_window(int64_t frame_duration_ns);
 
 public:

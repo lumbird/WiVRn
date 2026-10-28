@@ -41,6 +41,10 @@ constexpr double increase = 1.05;
 constexpr int windows_before_increase = 3;
 // The reference transfer time is refreshed this often, to follow clock drift and route changes.
 constexpr int base_reset_windows = 10;
+// After congestion, stay under this fraction of the bitrate that caused it...
+constexpr double ceiling_margin = 0.9;
+// ...for this many windows.
+constexpr int ceiling_duration = 30;
 } // namespace
 
 bitrate_controller::bitrate_controller(double min_fraction) :
@@ -99,15 +103,21 @@ std::optional<uint32_t> bitrate_controller::end_window(int64_t frame_duration_ns
 
 	uint32_t min_bitrate = max_bitrate * min_fraction;
 	uint32_t old = bitrate;
+	if (ceiling_windows > 0 and --ceiling_windows == 0)
+		ceiling = 0;
+
 	if (loss > max_loss or queue_delay > max_queue_delay * frame_duration_ns)
 	{
 		good_windows = 0;
+		ceiling = bitrate * ceiling_margin;
+		ceiling_windows = ceiling_duration;
 		bitrate = std::max<uint32_t>(bitrate * decrease, min_bitrate);
 	}
 	else if (++good_windows >= windows_before_increase)
 	{
 		good_windows = 0;
-		bitrate = std::min<uint32_t>(bitrate * increase, max_bitrate);
+		uint32_t limit = ceiling ? std::min(ceiling, max_bitrate) : max_bitrate;
+		bitrate = std::max(bitrate, std::min<uint32_t>(bitrate * increase, limit));
 	}
 
 	if (bitrate == old)
