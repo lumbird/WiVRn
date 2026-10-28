@@ -41,6 +41,22 @@ layout(set = 0, binding = 2) uniform writeonly restrict image2DArray luma;
 layout(set = 0, binding = 3) uniform writeonly restrict image2DArray chroma;
 
 layout(constant_id = 0) const int alpha_width = 0;
+// Picture adjustments (picture_adjustments.h). When false, this pipeline variant skips them entirely.
+layout(constant_id = 1) const bool picture_enabled = false;
+
+layout(push_constant) uniform Picture
+{
+	float exposure;
+	float gamma;
+	float contrast;
+	float saturation;
+	float vibrance;
+	float black_level;
+	float white_level;
+	float red_gain;
+	float green_gain;
+	float blue_gain;
+} picture;
 
 const mat3 color_space = mat3(
 //         R        G        B
@@ -69,6 +85,20 @@ vec3 from_linear_to_srgb(vec3 linear_rgb)
 		from_linear_to_srgb_channel(linear_rgb.g),
 		from_linear_to_srgb_channel(linear_rgb.b)
 	);
+}
+
+vec3 adjust_picture(vec3 linear_rgb)
+{
+	vec3 c = linear_rgb * picture.exposure * vec3(picture.red_gain, picture.green_gain, picture.blue_gain);
+	// The rest works on sRGB (perceptual) values, like a TV picture menu.
+	c = from_linear_to_srgb(clamp(c, 0.0, 1.0));
+	c = pow(c, vec3(1.0 / picture.gamma));
+	c = (c - 0.5) * picture.contrast + 0.5;
+	float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	float chroma = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
+	c = mix(vec3(luma), c, picture.saturation + picture.vibrance * (1.0 - clamp(chroma, 0.0, 1.0)));
+	c = picture.black_level + c * (picture.white_level - picture.black_level);
+	return clamp(c, 0.0, 1.0);
 }
 
 uint ABfe(uint src,uint off,uint bits){return bitfieldExtract(src,int(off),int(bits));}
@@ -127,7 +157,10 @@ void main()
 		}
 	}
 	colour /= max(count, 1);
-	colour.xyz = rgb_to_ycbcr(from_linear_to_srgb(colour.rgb));
+	if (picture_enabled)
+		colour.xyz = rgb_to_ycbcr(adjust_picture(colour.rgb));
+	else
+		colour.xyz = rgb_to_ycbcr(from_linear_to_srgb(colour.rgb));
 
 	imageStore(luma, ivec3(ix, iy, iz), vec4(colour.x));
 

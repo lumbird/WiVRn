@@ -109,6 +109,7 @@ if (WIVRN_BUILD_SERVER)
 			compositor/compositor.cpp
 			compositor/layer_squasher.cpp
 			compositor/foveation.cpp
+			compositor/picture_adjustments.cpp
 			compositor/pacer.cpp
 
 			encoder/encoder_settings.cpp

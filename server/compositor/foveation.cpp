@@ -102,48 +102,50 @@ vk::raii::DescriptorSetLayout make_ds_layout(wivrn::vk_bundle & vk)
 
 vk::raii::PipelineLayout make_layout(wivrn::vk_bundle & vk, vk::DescriptorSetLayout ds_layout)
 {
+	vk::PushConstantRange picture_range{
+	        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+	        .size = sizeof(wivrn::picture_adjustments::values),
+	};
 	vk::raii::PipelineLayout res(vk.device,
 	                             vk::PipelineLayoutCreateInfo{
 	                                     .setLayoutCount = 1,
 	                                     .pSetLayouts = &ds_layout,
+	                                     .pushConstantRangeCount = 1,
+	                                     .pPushConstantRanges = &picture_range,
 	                             });
 	vk.name(*res, "foveation pipeline layout");
 	return res;
 }
 
-std::array<vk::raii::Pipeline, 2> make_pipelines(wivrn::vk_bundle & vk, vk::PipelineLayout layout, int32_t alpha_width)
+std::array<vk::raii::Pipeline, 4> make_pipelines(wivrn::vk_bundle & vk, vk::PipelineLayout layout, int32_t alpha_width)
 {
 	auto shader = vk.load_shader("foveation");
-	auto spc = make_specialization_constants(alpha_width);
+	auto make = [&](int32_t alpha, bool picture) {
+		auto spc = make_specialization_constants(int32_t(alpha), VkBool32(picture));
+		return vk::raii::Pipeline{
+		        vk.device,
+		        nullptr,
+		        vk::ComputePipelineCreateInfo{
+		                .stage = {
+		                        .stage = vk::ShaderStageFlagBits::eCompute,
+		                        .module = *shader,
+		                        .pName = "main",
+		                        .pSpecializationInfo = spc,
+		                },
+		                .layout = layout,
+		        },
+		};
+	};
 	std::array res{
-	        vk::raii::Pipeline{
-	                vk.device,
-	                nullptr,
-	                vk::ComputePipelineCreateInfo{
-	                        .stage = {
-	                                .stage = vk::ShaderStageFlagBits::eCompute,
-	                                .module = *shader,
-	                                .pName = "main",
-	                        },
-	                        .layout = layout,
-	                },
-	        },
-	        vk::raii::Pipeline{
-	                vk.device,
-	                nullptr,
-	                vk::ComputePipelineCreateInfo{
-	                        .stage = {
-	                                .stage = vk::ShaderStageFlagBits::eCompute,
-	                                .module = *shader,
-	                                .pName = "main",
-	                                .pSpecializationInfo = spc,
-	                        },
-	                        .layout = layout,
-	                },
-	        },
+	        make(0, false),
+	        make(alpha_width, false),
+	        make(0, true),
+	        make(alpha_width, true),
 	};
 	vk.name(*res[0], "foveation pipeline");
 	vk.name(*res[1], "foveation+alpha pipeline");
+	vk.name(*res[2], "foveation+picture pipeline");
+	vk.name(*res[3], "foveation+alpha+picture pipeline");
 	return res;
 }
 
@@ -656,8 +658,10 @@ std::array<to_headset::foveation_parameter, 2> foveation::foveate(
 
 	device.updateDescriptorSets(writes, {});
 
-	cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *pipeline[alpha]);
+	auto picture = picture_adjustments::current();
+	cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *pipeline[(alpha ? 1 : 0) + (picture.enabled ? 2 : 0)]);
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *layout, 0, descriptor_set, {});
+	cmd.pushConstants<picture_adjustments::values>(*layout, vk::ShaderStageFlagBits::eCompute, 0, picture.v);
 	cmd.dispatch(divide_and_round_up(foveated_size.width, 8),
 	             divide_and_round_up(foveated_size.height, 8),
 	             2);

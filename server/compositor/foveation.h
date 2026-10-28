@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "picture_adjustments.h"
 #include "vk/allocation.h"
 #include "wivrn_packets.h"
 #include "xrt/xrt_defines.h"
@@ -55,7 +56,8 @@ class foveation
 
 	vk::raii::DescriptorSetLayout ds_layout;
 	vk::raii::PipelineLayout layout;
-	std::array<vk::raii::Pipeline, 2> pipeline;
+	// index: alpha + 2 * picture adjustments enabled
+	std::array<vk::raii::Pipeline, 4> pipeline;
 	vk::raii::DescriptorPool descriptor_pool;
 	vk::DescriptorSet descriptor_set;
 
