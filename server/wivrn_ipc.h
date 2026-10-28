@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "compositor/picture_adjustments.h"
 #include "wivrn_packets.h"
 #include "wivrn_sockets.h"
 
@@ -71,7 +72,12 @@ struct set_bitrate
 	uint32_t bitrate_bps;
 };
 
-using packets = std::variant<stop, disconnect, set_bitrate, wivrn::to_headset::stream_tab_change>;
+struct set_picture
+{
+	wivrn::picture_adjustments::state picture;
+};
+
+using packets = std::variant<stop, disconnect, set_bitrate, set_picture, wivrn::to_headset::stream_tab_change>;
 } // namespace to_monado
 
 extern std::optional<wivrn::typed_socket<wivrn::UnixDatagram, to_monado::packets, from_monado::packets>> wivrn_ipc_socket_monado;

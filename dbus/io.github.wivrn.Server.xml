@@ -78,6 +78,14 @@
 			<arg type="s" name="Tab"/>
 		</method>
 
+		<!-- Live picture adjustments. Values: brightness, gamma, contrast, saturation, vibrance,
+		     black level, white level, red, green, blue gains. -->
+		<method name="SetPicture">
+			<arg type="b" name="Enabled"/>
+			<arg type="ad" name="Values"/>
+			<annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="QList&lt;double&gt;"/>
+		</method>
+
 		<signal name="ServerError">
 			<arg type="s" name="where"/>
 			<arg type="s" name="message"/>

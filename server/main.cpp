@@ -26,6 +26,7 @@
  */
 
 #include "application.h"
+#include "compositor/picture_adjustments.h"
 #include "openxr/openxr.h"
 #include "sleep_inhibitor.h"
 #include "util/u_trace_marker.h"
@@ -737,6 +738,49 @@ gboolean on_handle_set_client_tab(WivrnServer * skeleton, GDBusMethodInvocation 
 	return G_SOURCE_CONTINUE;
 }
 
+gboolean on_handle_set_picture(WivrnServer * skeleton, GDBusMethodInvocation * invocation, gpointer user_data)
+{
+	GVariant * args = g_dbus_method_invocation_get_parameters(invocation);
+	gboolean enabled;
+	GVariant * values;
+	g_variant_get(args, "(b@ad)", &enabled, &values);
+	gsize n = 0;
+	const double * v = static_cast<const double *>(g_variant_get_fixed_array(values, &n, sizeof(double)));
+	if (n != 10)
+	{
+		g_variant_unref(values);
+		g_dbus_method_invocation_return_dbus_error(invocation, "io.github.wivrn.Server.InvalidPicture", "expected 10 values");
+		return G_SOURCE_CONTINUE;
+	}
+	picture_adjustments::state s{
+	        .enabled = bool(enabled),
+	        .v = {
+	                .exposure = float(v[0]),
+	                .gamma = float(v[1]),
+	                .contrast = float(v[2]),
+	                .saturation = float(v[3]),
+	                .vibrance = float(v[4]),
+	                .black_level = float(v[5]),
+	                .white_level = float(v[6]),
+	                .red_gain = float(v[7]),
+	                .green_gain = float(v[8]),
+	                .blue_gain = float(v[9]),
+	        },
+	};
+	g_variant_unref(values);
+	try
+	{
+		if (wivrn_ipc_socket_main_loop)
+			wivrn_ipc_socket_main_loop->send(to_monado::set_picture{s});
+	}
+	catch (std::exception & e)
+	{
+		// No headset session yet: the compositor reads picture.conf when it starts.
+	}
+	g_dbus_method_invocation_return_value(invocation, nullptr);
+	return G_SOURCE_CONTINUE;
+}
+
 void on_bitrate(WivrnServer * server, const GParamSpec * pspec, gpointer data)
 {
 	auto bitrate = wivrn_server_get_bitrate(server);
@@ -883,6 +927,7 @@ void on_name_acquired(GDBusConnection * connection, const gchar * name, gpointer
 	}
 
 	g_signal_connect(dbus_server, "handle-set-client-tab", G_CALLBACK(on_handle_set_client_tab), NULL);
+	g_signal_connect(dbus_server, "handle-set-picture", G_CALLBACK(on_handle_set_picture), NULL);
 
 	wivrn_server_set_steam_command(dbus_server, steam_command().c_str());
 

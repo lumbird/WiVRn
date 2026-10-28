@@ -22,6 +22,7 @@
 
 #include "accept_connection.h"
 #include "application.h"
+#include "compositor/picture_adjustments.h"
 #include "configuration.h"
 #include "driver/app_pacer.h"
 #include "driver/xrt_cast.h"
@@ -992,6 +993,11 @@ void wivrn_session::operator()(to_monado::disconnect &&)
 void wivrn_session::operator()(to_monado::set_bitrate && data)
 {
 	compositor.set_bitrate(data.bitrate_bps);
+}
+
+void wivrn_session::operator()(to_monado::set_picture && data)
+{
+	picture_adjustments::set(data.picture);
 }
 
 void wivrn_session::operator()(to_headset::stream_tab_change && data)
