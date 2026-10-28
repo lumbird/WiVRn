@@ -61,6 +61,8 @@ struct configuration
 	std::optional<float> lh_stick_deadzone;
 	bool hid_forwarding = false;
 	bool tcp_only = false;
+	bool adaptive_bitrate = false;
+	double adaptive_bitrate_min = 0.25; // fraction of the requested bitrate
 	int port = wivrn::default_port;
 	std::string hostname = wivrn::hostname();
 	service_publication publication = service_publication::avahi;

@@ -22,6 +22,7 @@
 #include "compositor.h"
 
 // Monado includes
+#include "driver/configuration.h"
 #include "driver/xrt_cast.h"
 #include "main/comp_frame.h"
 #include "util/comp_render_helpers.h"
@@ -747,6 +748,9 @@ compositor::compositor(wivrn_session & session) :
 	if (xret != XRT_SUCCESS)
 		throw std::runtime_error("comp_swapchain_shared_init failed");
 
+	if (configuration cfg; cfg.adaptive_bitrate)
+		adaptive_bitrate.emplace(cfg.adaptive_bitrate_min);
+
 	print_encoders(settings);
 	for (auto [i, settings]: std::ranges::enumerate_view(settings))
 		encoders[i] = video_encoder::create(vk, settings, i);
@@ -799,6 +803,8 @@ xrt_system_compositor_info compositor::sys_info() const
 
 void compositor::set_bitrate(uint32_t bitrate)
 {
+	if (adaptive_bitrate)
+		bitrate = adaptive_bitrate->set_max(bitrate);
 	for (auto & encoder: encoders)
 		encoder->set_bitrate(bitrate);
 }
@@ -836,6 +842,12 @@ void compositor::on_feedback(const from_headset::feedback & feedback, const cloc
 	if (stream >= encoders.size())
 		return;
 	encoders[stream]->on_feedback(feedback);
+	if (adaptive_bitrate)
+	{
+		if (auto bitrate = adaptive_bitrate->on_feedback(feedback, U_TIME_1S_IN_NS / frame_rate.load()))
+			for (auto & encoder: encoders)
+				encoder->set_bitrate(*bitrate);
+	}
 	if (not o)
 		return;
 	pacer.on_feedback(feedback, o);

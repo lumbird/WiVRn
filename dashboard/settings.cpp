@@ -117,6 +117,7 @@ void Settings::emitAllChanged()
 	codecChanged();
 	tenbitChanged();
 	tcpOnlyChanged();
+	adaptiveBitrateChanged();
 	applicationChanged();
 	openvrChanged();
 	debugGuiChanged();
@@ -484,6 +485,22 @@ void Settings::set_tcpOnly(const bool & value)
 		tcpOnlyChanged();
 }
 
+bool Settings::adaptiveBitrate() const
+{
+	auto it = m_jsonSettings.find("adaptive-bitrate");
+	if (it != m_jsonSettings.end() and it->is_boolean())
+		return *it;
+	return false;
+}
+
+void Settings::set_adaptiveBitrate(const bool & value)
+{
+	auto old = adaptiveBitrate();
+	m_jsonSettings["adaptive-bitrate"] = value;
+	if (old != value)
+		adaptiveBitrateChanged();
+}
+
 int Settings::port() const
 {
 	auto it = m_jsonSettings.find("port");
@@ -593,6 +610,7 @@ void Settings::restore_defaults()
 	m_jsonSettings.erase("use-steamvr-lh");
 	m_jsonSettings.erase("lh-stick-deadzone");
 	m_jsonSettings.erase("tcp-only");
+	m_jsonSettings.erase("adaptive-bitrate");
 	m_jsonSettings.erase("application");
 	m_jsonSettings.erase("port");
 	m_jsonSettings.erase("hostname");
