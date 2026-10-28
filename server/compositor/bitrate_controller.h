@@ -43,6 +43,9 @@ class bitrate_controller
 	uint32_t max_bitrate = 0; // requested by the headset, 0 until known
 	uint32_t bitrate = 0;
 
+	// The headset reports a frame several times (received, decoded, displayed): count it once.
+	uint64_t last_frame = 0;
+
 	// statistics for the current window
 	int frames = 0;
 	int lost = 0;

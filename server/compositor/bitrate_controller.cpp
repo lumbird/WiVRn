@@ -57,13 +57,14 @@ uint32_t bitrate_controller::set_max(uint32_t bitrate_bps)
 
 std::optional<uint32_t> bitrate_controller::on_feedback(const from_headset::feedback & feedback, int64_t frame_duration_ns)
 {
-	// Only the main stream, and only the first report of each frame.
-	if (feedback.stream_index != 0 or feedback.times_displayed > 1 or frame_duration_ns <= 0)
+	// Only the main stream.
+	if (feedback.stream_index != 0 or frame_duration_ns <= 0)
 		return std::nullopt;
 
 	std::lock_guard lock(mutex);
-	if (max_bitrate == 0)
+	if (max_bitrate == 0 or (last_frame and feedback.frame_index <= last_frame))
 		return std::nullopt;
+	last_frame = feedback.frame_index;
 
 	++frames;
 	if (not feedback.sent_to_decoder or not feedback.received_last_packet)
