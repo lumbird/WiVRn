@@ -80,6 +80,17 @@ Kirigami.ScrollablePage {
                 }
             }
 
+            RowLayout {
+                Kirigami.FormData.label: i18n("Bitrate:")
+                Controls.CheckBox {
+                    id: adaptive_bitrate
+                    text: i18n("Adjust automatically to the network")
+                }
+                Kirigami.ContextualHelpButton {
+                    toolTipText: i18n("Lowers the bitrate when frames arrive late or are lost, and raises it back slowly when the network keeps up, never above the bitrate set in the headset. Takes effect on the next connection.")
+                }
+            }
+
             Kirigami.Separator {
                 Kirigami.FormData.isSection: true
             }
@@ -333,6 +344,7 @@ Kirigami.ScrollablePage {
         DashboardSettings.show_system_checks = show_system_checks.checked;
 
         Settings.debugGui = debug_gui.checked;
+        Settings.adaptiveBitrate = adaptive_bitrate.checked;
         Settings.steamVrLh = steamvr_lh.checked;
         if (lh_max_extrapolation_enabled.checked) {
             Settings.lhMaxExtrapolation = lh_max_extrapolation.value;
@@ -348,6 +360,7 @@ Kirigami.ScrollablePage {
     function load() {
         select_game.load();
         debug_gui.checked = Settings.debugGui;
+        adaptive_bitrate.checked = Settings.adaptiveBitrate;
         steamvr_lh.checked = Settings.steamVrLh;
         lh_max_extrapolation_enabled.checked = Settings.lhMaxExtrapolationEnabled;
         lh_max_extrapolation.value = Settings.lhMaxExtrapolation;
