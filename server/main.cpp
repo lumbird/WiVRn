@@ -768,14 +768,18 @@ gboolean on_handle_set_picture(WivrnServer * skeleton, GDBusMethodInvocation * i
 	        },
 	};
 	g_variant_unref(values);
-	try
+	// Only forward while a headset is connected: otherwise nothing reads the socket and sending
+	// could block the main loop. The dashboard sends the values again when a headset connects.
+	if (wivrn_ipc_socket_main_loop and wivrn_server_get_headset_connected(dbus_server))
 	{
-		if (wivrn_ipc_socket_main_loop)
+		try
+		{
 			wivrn_ipc_socket_main_loop->send(to_monado::set_picture{s});
-	}
-	catch (std::exception & e)
-	{
-		// No headset session yet: the compositor reads picture.conf when it starts.
+		}
+		catch (std::exception & e)
+		{
+			std::cerr << "Failed to forward picture adjustments: " << e.what() << std::endl;
+		}
 	}
 	g_dbus_method_invocation_return_value(invocation, nullptr);
 	return G_SOURCE_CONTINUE;
